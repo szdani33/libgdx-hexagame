@@ -1,23 +1,36 @@
 package hu.daniels.libgdx.hexagame;
 
-import com.badlogic.gdx.ApplicationAdapter;
-import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.*;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.PolygonRegion;
-import com.badlogic.gdx.graphics.g2d.PolygonSprite;
-import com.badlogic.gdx.graphics.g2d.PolygonSpriteBatch;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.g2d.*;
 import com.badlogic.gdx.math.MathUtils;
 
 public class Hexagame extends ApplicationAdapter {
-	PolygonSpriteBatch batch;
+	private PolygonSpriteBatch batch;
+    private BitmapFont font;
+    private float counter;
+    private int speed;
 
 	@Override
 	public void create () {
 		batch = new PolygonSpriteBatch();
+        font = new BitmapFont();
+        font.setColor(Color.LIGHT_GRAY);
+        speed = 300;
+        Gdx.input.setInputProcessor(new InputAdapter() {
+            @Override
+            public boolean scrolled(int amount) {
+                if (amount < 0) {
+                    changeSpeed(1.1f);
+                } else if (amount > 0) {
+                    changeSpeed(0.9f);
+                }
+                return true;
+            }
+        });
 	}
 
 	@Override
@@ -32,17 +45,39 @@ public class Hexagame extends ApplicationAdapter {
         TextureRegion textureRegion = new TextureRegion(texture);
         float centerX = Gdx.graphics.getWidth() / 2;
         float centerY = Gdx.graphics.getHeight() / 2;
-        float[] hexagonVertices = calcHexagonVertices(centerX, centerY, 150);
+        float size = 150 - 50 * MathUtils.sin(counter * MathUtils.PI / 180);
+        float[] hexagonVertices = calcHexagonVertices(centerX, centerY, size);
         short[] hexagonTriangles = getHexagonTriangles();
         PolygonRegion polygonRegion = new PolygonRegion(textureRegion, hexagonVertices, hexagonTriangles);
         PolygonSprite polygonSprite = new PolygonSprite(polygonRegion);
         polygonSprite.setOrigin(centerX, centerY);
 
+        if (Gdx.input.isKeyJustPressed(Input.Keys.PLUS)) {
+            changeSpeed(1.1f);
+        }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.MINUS)) {
+            changeSpeed(0.9f);
+        }
+
         batch.begin();
         polygonSprite.draw(batch);
-		batch.end();
-        polygonSprite.rotate(10.1f);
+        font.draw(batch, "Speed: " + speed, 10, 30);
+        batch.end();
+
+
+        counter += speed * Gdx.graphics.getDeltaTime();
 	}
+
+    private void changeSpeed(float multiplier) {
+        int minSpeed = 80;
+        int maxSpeed = 1000;
+        speed *= multiplier;
+        if(speed < minSpeed) {
+            speed = minSpeed;
+        } else if (speed > maxSpeed) {
+            speed = maxSpeed;
+        }
+    }
 
     private short[] getHexagonTriangles() {
         return new short[] {0, 2, 1,
